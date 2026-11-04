@@ -1,0 +1,77 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the project
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install verified Godot 4.6.3 and Windows templates
+        run: |
+          python3 tools/setup_godot.py --install-dir "$RUNNER_TEMP/godot"
+          printf '%s\n' "$RUNNER_TEMP/godot/bin" >> "$GITHUB_PATH"
+          printf 'XDG_DATA_HOME=%s\n' "$RUNNER_TEMP/godot/share" >> "$GITHUB_ENV"
+          printf 'XDG_CACHE_HOME=%s\n' "$RUNNER_TEMP/godot/cache" >> "$GITHUB_ENV"
+          printf 'XDG_CONFIG_HOME=%s\n' "$RUNNER_TEMP/godot/config" >> "$GITHUB_ENV"
+
+      - name: Import, run functional checks and build Windows package
+        run: python3 tools/build_windows.py
+
+      - name: Upload Windows download
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: PokeSurvival-Windows
+          path: |
+            build/dist/PokeSurvival-Windows.zip
+            build/dist/PokeSurvival-Windows.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  windows-smoke:
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download the Windows package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: PokeSurvival-Windows
+          path: package
+
+      - name: Verify and start the actual Windows executable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = ((Get-Content package/PokeSurvival-Windows.zip.sha256).Trim() -split '\s+')[0]
+          $actual = (Get-FileHash package/PokeSurvival-Windows.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw 'Windows ZIP checksum mismatch' }
+          Expand-Archive package/PokeSurvival-Windows.zip -DestinationPath game
+          $gameDir = (Resolve-Path game).Path
+          $log = Join-Path $gameDir 'startup.log'
+          $game = Start-Process -FilePath (Join-Path $gameDir 'PokeSurvival.exe') -WorkingDirectory $gameDir -ArgumentList '--headless', '--quit-after', '120', '--log-file', $log -PassThru
+          if (-not $game.WaitForExit(60000)) {
+            $game.Kill()
+            throw 'Windows startup timed out'
+          }
+          if ($game.ExitCode -ne 0) { throw "Windows executable failed with exit code $($game.ExitCode)" }
+          if (-not (Test-Path $log)) { throw 'Windows startup did not write its log' }
+          $text = Get-Content $log -Raw
+          Write-Output $text
+          if ($text -match '(?m)^(SCRIPT ERROR|ERROR):') { throw 'Godot reported an error on Windows' }
+          Write-Output 'Windows executable started and exited successfully.'
