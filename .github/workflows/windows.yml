@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Opcional: versión a publicar, por ejemplo v0.1.0"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -75,3 +81,48 @@ jobs:
           Write-Output $text
           if ($text -match '(?m)^(SCRIPT ERROR|ERROR):') { throw 'Godot reported an error on Windows' }
           Write-Output 'Windows executable started and exited successfully.'
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: [build, windows-smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download the tested Windows package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: PokeSurvival-Windows
+          path: package
+
+      - name: Verify and publish the Windows version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo 'Usa una versión como v0.1.0 o v0.1.0-beta.1' >&2
+            exit 1
+          fi
+          cd package
+          sha256sum --check PokeSurvival-Windows.zip.sha256
+          cat > release-notes.md <<'NOTES'
+          Prototipo de PokeSurvival para Windows de 64 bits.
+
+          Descarga `PokeSurvival-Windows.zip`, selecciona **Extraer todo** y abre `PokeSurvival.exe`. Mantén `PokeSurvival.pck` junto al ejecutable. No necesitas instalar Godot.
+
+          **Controles:** WASD/flechas para moverte, espacio para saltar, botón derecho y ratón para girar la cámara, Escape para elegir entrenador.
+
+          Incluye Ash/Pikachu, Brock/Onix y Maya/Piplup con figuras provisionales, movimiento, compañero automático, enemigos, vida y reinicio. Los compañeros comparten todavía el mismo ataque. Aún no incluye experiencia, MT ni guardado de partidas.
+
+          Validación: 11 comprobaciones funcionales en Linux y arranque del ejecutable real en Windows sin pantalla. El arranque automático no sustituye una prueba interactiva completa.
+          NOTES
+          printf '\n[Pruebas de esta versión](%s)\n' "$RUN_URL" >> release-notes.md
+          gh release create "$RELEASE_TAG" PokeSurvival-Windows.zip PokeSurvival-Windows.zip.sha256 \
+            --repo "$GH_REPO" --target "$RELEASE_SHA" --prerelease \
+            --title "$RELEASE_TAG — Prototipo jugable para Windows" --notes-file release-notes.md

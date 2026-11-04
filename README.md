@@ -65,6 +65,8 @@ godot --headless --path . --export-release Windows
 
 La automatización de [GitHub Actions](https://github.com/quimfuentes28code/PokeSurvival/actions) verifica las descargas oficiales, importa el proyecto, ejecuta las pruebas, exporta y empaqueta Windows al subir cambios a `main`, abrir una pull request o iniciar el flujo manualmente. El ZIP de cada ejecución aparece como artefacto de Actions; las versiones publicadas para jugar están en Releases.
 
+Para publicar una nueva versión, abre **Actions → Windows build → Run workflow**, selecciona `main` y escribe una etiqueta nueva como `v0.1.1` en `release_tag`. Tras superar las pruebas, el flujo publica el ZIP en Releases como versión preliminar. Deja ese campo vacío para generar únicamente un artefacto de prueba.
+
 También puedes preparar las herramientas con `python3 tools/setup_godot.py --help` y consultar el empaquetado reproducible con `python3 tools/build_windows.py --help`.
 
 En el entorno de nube las plantillas están verificadas e instaladas bajo `/workspace/pokesurvival-environment/data/godot/export_templates/4.6.3.stable`; usa las variables XDG indicadas arriba. La exportación es Windows x86_64 y excluye las pruebas, documentos de diseño y herramientas de desarrollo. La validación incluye 11 comprobaciones funcionales en Linux y un arranque del ejecutable exportado en Windows sin pantalla. La prueba de Windows comprueba que carga y termina sin errores; no sustituye probar controles y gráficos de forma interactiva.
