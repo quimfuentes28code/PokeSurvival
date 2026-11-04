@@ -2,6 +2,7 @@ extends Node3D
 
 const TrainerScript = preload("res://scripts/trainer.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
+const ModelAssets = preload("res://scripts/model_assets.gd")
 const TRAINERS := {
 	"ash": {"name": "Ash", "partner": "Pikachu", "move": "Impactrueno", "color": Color("f6d651"), "coat": Color("4d86db")},
 	"brock": {"name": "Brock", "partner": "Onix", "move": "Lanzarrocas", "color": Color("a8b5bd"), "coat": Color("c68b50")},
@@ -25,6 +26,10 @@ var attack_clock := 0.0
 var orbit_angle := 0.0
 var selected := "ash"
 var rng := RandomNumberGenerator.new()
+var trainer_anim: AnimationPlayer
+var partner_anim: AnimationPlayer
+var voxel_partner := false
+var partner_attack_timer := 0.0
 
 func _ready() -> void:
 	_setup_input()
@@ -219,23 +224,34 @@ func start_run(id: String) -> void:
 	var model := Node3D.new()
 	model.name = "Model"
 	trainer.add_child(model)
-	_mesh(model, _box(Vector3(0.75, 1, 0.45)), TRAINERS[id].coat, Vector3(0, 0.9, 0))
-	_mesh(model, _sphere(0.35), Color("f6c7a1"), Vector3(0, 1.65, 0))
-	_mesh(model, _box(Vector3(0.8, 0.15, 0.65)), TRAINERS[id].coat, Vector3(0, 1.95, 0.08))
-	_mesh(model, _box(Vector3(0.24, 0.45, 0.28)), Color("233b56"), Vector3(-0.22, 0.23, 0))
-	_mesh(model, _box(Vector3(0.24, 0.45, 0.28)), Color("233b56"), Vector3(0.22, 0.23, 0))
+	trainer_anim = null
+	if id == "ash" and ModelAssets.install(model, ModelAssets.ASH_PATH):
+		trainer_anim = ModelAssets.animator(model)
+		ModelAssets.play(trainer_anim, "Idle")
+	else:
+		_mesh(model, _box(Vector3(0.75, 1, 0.45)), TRAINERS[id].coat, Vector3(0, 0.9, 0))
+		_mesh(model, _sphere(0.35), Color("f6c7a1"), Vector3(0, 1.65, 0))
+		_mesh(model, _box(Vector3(0.8, 0.15, 0.65)), TRAINERS[id].coat, Vector3(0, 1.95, 0.08))
+		_mesh(model, _box(Vector3(0.24, 0.45, 0.28)), Color("233b56"), Vector3(-0.22, 0.23, 0))
+		_mesh(model, _box(Vector3(0.24, 0.45, 0.28)), Color("233b56"), Vector3(0.22, 0.23, 0))
 	companion = Node3D.new()
 	add_child(companion)
-	_mesh(companion, _sphere(0.55), TRAINERS[id].color)
-	if id == "ash":
-		_mesh(companion, _box(Vector3(0.18, 0.7, 0.18)), TRAINERS[id].color, Vector3(-0.25, 0.6, 0))
-		_mesh(companion, _box(Vector3(0.18, 0.7, 0.18)), TRAINERS[id].color, Vector3(0.25, 0.6, 0))
-	elif id == "brock":
-		_mesh(companion, _sphere(0.4), TRAINERS[id].color, Vector3(0, -0.3, 0.5))
-		_mesh(companion, _sphere(0.3), TRAINERS[id].color, Vector3(0, -0.5, 0.9))
+	voxel_partner = id == "ash" and ModelAssets.install(companion, ModelAssets.PIKACHU_PATH)
+	partner_anim = ModelAssets.animator(companion) if voxel_partner else null
+	partner_attack_timer = 0.0
+	if voxel_partner:
+		ModelAssets.play(partner_anim, "Idle")
 	else:
-		_mesh(companion, _sphere(0.3), Color("eaf6f2"), Vector3(0, 0.02, 0.35))
-	companion.position = trainer.position + Vector3(1.7, 1, 0)
+		_mesh(companion, _sphere(0.55), TRAINERS[id].color)
+		if id == "ash":
+			_mesh(companion, _box(Vector3(0.18, 0.7, 0.18)), TRAINERS[id].color, Vector3(-0.25, 0.6, 0))
+			_mesh(companion, _box(Vector3(0.18, 0.7, 0.18)), TRAINERS[id].color, Vector3(0.25, 0.6, 0))
+		elif id == "brock":
+			_mesh(companion, _sphere(0.4), TRAINERS[id].color, Vector3(0, -0.3, 0.5))
+			_mesh(companion, _sphere(0.3), TRAINERS[id].color, Vector3(0, -0.5, 0.9))
+		else:
+			_mesh(companion, _sphere(0.3), Color("eaf6f2"), Vector3(0, 0.02, 0.35))
+	companion.position = trainer.position + Vector3(1.7, 0.0 if voxel_partner else 1.0, 0)
 	trainer.active = true
 	running = true
 	menu.hide()
@@ -250,6 +266,10 @@ func _clear_run() -> void:
 		companion.free()
 	for enemy in enemy_root.get_children():
 		enemy.free()
+	trainer_anim = null
+	partner_anim = null
+	voxel_partner = false
+	partner_attack_timer = 0.0
 
 func show_menu() -> void:
 	running = false
@@ -273,8 +293,22 @@ func _physics_process(delta: float) -> void:
 	var camera_offset := Vector3(0, 9, 13).rotated(Vector3.UP, orbit_angle)
 	camera.position = camera.position.lerp(trainer.position + camera_offset, minf(delta * 8.0, 1.0))
 	camera.look_at(trainer.position + Vector3(0, 1, 0))
-	var follow := trainer.position + Vector3(1.7, 1.0 + sin(elapsed * 5.0) * 0.12, 0).rotated(Vector3.UP, orbit_angle)
+	var altitude := 0.05 + sin(elapsed * 5.0) * 0.025 if voxel_partner else 1.0 + sin(elapsed * 5.0) * 0.12
+	var follow := trainer.position + Vector3(1.7, altitude, 0).rotated(Vector3.UP, orbit_angle)
+	var follow_distance := companion.position.distance_to(follow)
 	companion.position = companion.position.lerp(follow, minf(delta * 9.0, 1.0))
+	if is_instance_valid(trainer_anim):
+		var moving := Vector2(trainer.velocity.x, trainer.velocity.z).length() > 0.3
+		var clip := "Idle"
+		if not trainer.is_on_floor():
+			clip = "Jump"
+		elif moving:
+			clip = "Run"
+		ModelAssets.play(trainer_anim, clip)
+	if is_instance_valid(partner_anim):
+		partner_attack_timer = maxf(0.0, partner_attack_timer - delta)
+		if partner_attack_timer <= 0.0:
+			ModelAssets.play(partner_anim, "Run" if follow_distance > 0.25 else "Idle")
 	spawn_clock -= delta
 	if spawn_clock <= 0.0:
 		spawn_clock = maxf(0.6, 2.4 - elapsed * 0.008)
@@ -324,6 +358,9 @@ func attack_nearest() -> bool:
 	var fade := create_tween()
 	fade.tween_interval(0.12)
 	fade.tween_callback(bolt.queue_free)
+	if is_instance_valid(partner_anim):
+		partner_attack_timer = 0.45
+		ModelAssets.play(partner_anim, "Attack_ThunderShock")
 	nearest.take_hit(1)
 	return true
 
@@ -341,6 +378,7 @@ func hurt_trainer(amount: int) -> void:
 	if health == 0:
 		running = false
 		trainer.active = false
+		ModelAssets.play(trainer_anim, "KO")
 		end_label.text = "Fin de la práctica\n%d objetivos · %d s" % [defeated, int(elapsed)]
 		end_panel.show()
 
