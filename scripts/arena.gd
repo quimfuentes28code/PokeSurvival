@@ -173,7 +173,7 @@ func _build_interface() -> void:
 	column.add_theme_constant_override("separation", 14)
 	panel.add_child(column)
 	column.add_child(_label("Elige tu entrenador", 34))
-	column.add_child(_label("Prototipo técnico · figuras provisionales", 18, Color("8fe1c2")))
+	column.add_child(_label("Entrenadores voxel V5 · compañeros en desarrollo", 18, Color("8fe1c2")))
 	column.add_child(_label("Muévete, esquiva y deja que tu compañero ataque.\nLos objetivos rosados se acercan: evita el contacto.", 18))
 	for id in TRAINERS:
 		var option: Dictionary = TRAINERS[id]
@@ -225,7 +225,7 @@ func start_run(id: String) -> void:
 	model.name = "Model"
 	trainer.add_child(model)
 	trainer_anim = null
-	if id == "ash" and ModelAssets.install(model, ModelAssets.ASH_PATH):
+	if (id == "ash" and ModelAssets.install(model, ModelAssets.ASH_PATH)) or (id == "brock" and ModelAssets.install(model, ModelAssets.BROCK_PATH)):
 		trainer_anim = ModelAssets.animator(model)
 		ModelAssets.play(trainer_anim, "Idle")
 	else:
@@ -360,7 +360,7 @@ func attack_nearest() -> bool:
 	fade.tween_callback(bolt.queue_free)
 	if is_instance_valid(partner_anim):
 		partner_attack_timer = 0.45
-		ModelAssets.play(partner_anim, "Attack_ThunderShock")
+		ModelAssets.play(partner_anim, "Impactrueno")
 	nearest.take_hit(1)
 	return true
 

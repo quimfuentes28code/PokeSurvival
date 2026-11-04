@@ -1,16 +1,13 @@
-# Modelos voxel para PokeSurvival
+# Modelos voxel corregidos V5 (Godot 4.6.3)
 
-Los archivos reales proceden de los prototipos de personaje aprobados. Este repositorio **no contiene todavía los GLB binarios**: se distribuyen por separado en el paquete de modelos de esta conversación.
+El código del proyecto busca los siguientes recursos opcionales en esta carpeta:
 
-Para activar los modelos, copia exactamente estos archivos en esta carpeta:
+- `P01_Ash_V5_Limpio_Animado.glb`
+- `PK01_Pikachu_V5_Limpio_Animado.glb`
+- `P02_Brock_V5_Limpio_Animado.glb`
 
-- `P01_Ash_V4_ReferenciaVoxel_Animated.glb`
-- `PK01_Pikachu_ReferenciaVoxel_Animated.glb`
+Estos GLB **no están almacenados en este repositorio público**. Se distribuyen en el ZIP completo de Godot 4 creado en la conversación del proyecto. Coloca aquí los tres GLB antes de importar el proyecto en el editor.
 
-Abre `project.godot` con Godot 4 y permite que importe los GLB antes de ejecutar. Los nombres distinguen mayúsculas/minúsculas.
+Ash, Pikachu y Brock tienen modelos animados corregidos sin las proyecciones de texturas de versiones anteriores. Los clips del entrenador son Idle, Run, Dodge, Jump, Hurt y KO. Pikachu incluye también **Impactrueno**. En la versión actual, se vinculan Idle/Run/Jump/KO del entrenador y Idle/Run/Impactrueno del compañero. Se reservan Dodge/Hurt para futuras mecánicas.
 
-**Integración:** Ash tiene Idle, Run, Jump y KO conectados al estado del personaje; Pikachu tiene Idle, Run e Impactrueno conectados a su seguimiento y ataque. Los demás clips (Dodge, Hurt) permanecen para un futuro sistema de esquiva/daño animado.
-
-**Fallback:** Si faltan los GLB, los personajes vuelven a las figuras de colores. Así las pruebas automatizadas y builds básicos siguen funcionando.
-
-**Importante:** Un build de GitHub Actions solo mostrará los modelos si sus archivos GLB forman parte del checkout usado para compilar. El ZIP de modelos se entrega separado, por lo que las versiones automáticas actuales siguen usando figuras provisionales.
+Si faltan los archivos, el juego sigue funcionando con figuras provisionales. **El ejecutable generado automáticamente en GitHub Actions seguirá mostrando figuras provisionales hasta que estos archivos se incluyan en el checkout de compilación.** El ZIP para Windows V5 compilado con los GLB está disponible por separado en la conversación.
