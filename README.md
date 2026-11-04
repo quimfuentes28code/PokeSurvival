@@ -67,6 +67,6 @@ La automatización de [GitHub Actions](https://github.com/quimfuentes28code/Poke
 
 También puedes preparar las herramientas con `python3 tools/setup_godot.py --help` y consultar el empaquetado reproducible con `python3 tools/build_windows.py --help`.
 
-En el entorno de nube las plantillas están verificadas e instaladas bajo `/workspace/pokesurvival-environment/data/godot/export_templates/4.6.3.stable`; usa las variables XDG indicadas arriba. La exportación es Windows x86_64 y excluye las pruebas, documentos de diseño y herramientas de desarrollo. El contenido exportado superó las 11 comprobaciones funcionales en Linux; el ejecutable no se ha ejecutado en una máquina Windows.
+En el entorno de nube las plantillas están verificadas e instaladas bajo `/workspace/pokesurvival-environment/data/godot/export_templates/4.6.3.stable`; usa las variables XDG indicadas arriba. La exportación es Windows x86_64 y excluye las pruebas, documentos de diseño y herramientas de desarrollo. La validación incluye 11 comprobaciones funcionales en Linux y un arranque del ejecutable exportado en Windows sin pantalla. La prueba de Windows comprueba que carga y termina sin errores; no sustituye probar controles y gráficos de forma interactiva.
 
 Consulta [el diseño propuesto](docs/DISENO.md) y [el estado de la investigación](docs/INVESTIGACION.md) para los siguientes pasos y sus fuentes.
