@@ -1,0 +1,25 @@
+name: Export toolchain for local packaging
+on:
+  push:
+    branches: [chatgpt/export-toolchain]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install official Godot and verified templates
+        run: |
+          python3 tools/setup_godot.py --install-dir "$RUNNER_TEMP/godot-tools"
+          mkdir -p "$RUNNER_TEMP/godot-tools/licenses"
+          curl -fLsS https://raw.githubusercontent.com/godotengine/godot/4.6.3-stable/LICENSE.txt -o "$RUNNER_TEMP/godot-tools/licenses/Godot-LICENSE.txt"
+          curl -fLsS https://raw.githubusercontent.com/godotengine/godot/4.6.3-stable/COPYRIGHT.txt -o "$RUNNER_TEMP/godot-tools/licenses/Godot-COPYRIGHT.txt"
+          tar -czf Godot-Tools-Linux-Windows.tar.gz -C "$RUNNER_TEMP/godot-tools" bin/godot share/godot/export_templates/4.6.3.stable licenses
+      - name: Upload executable and export templates
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Godot-Tools
+          path: Godot-Tools-Linux-Windows.tar.gz
+          retention-days: 1
