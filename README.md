@@ -21,6 +21,12 @@ No necesitas instalar Godot para jugar. Es una aplicación de escritorio para Wi
 
 El código, el diseño y las instrucciones se guardan en este repositorio. Los ejecutables se distribuyen en **Releases**. Las partidas del prototipo todavía no tienen guardado persistente.
 
+## Modelos 3D de Ash y Pikachu
+
+El prototipo ya admite los modelos voxel 3D de Ash V4 y Pikachu con animaciones importadas de sus GLB. Para instalarlos descarga el paquete de personajes de esta conversación y copia su carpeta `assets/` en la raíz de este repositorio. Los dos ficheros deben llamarse `P01_Ash_V4_ReferenciaVoxel_Animated.glb` y `PK01_Pikachu_ReferenciaVoxel_Animated.glb`. Abre el proyecto en Godot para importarlos y luego ejecútalo. Si faltan, el juego utiliza las figuras provisionales y sigue funcionando.
+
+Consulta [las instrucciones de instalación y los límites](assets/README.md). **La descarga de Windows en Releases no incluye todavía esos dos modelos.**
+
 ## Ejecutar
 
 ```sh
